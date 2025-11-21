@@ -1,0 +1,67 @@
+# ==============
+# Flutter
+# ==============
+# See https://flutter.dev/docs/development/tools/version-control
+
+# IDE-specific files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# General
+.DS_Store
+*.log
+*.class
+*.pyc
+*.swp
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+coverage/
+test/
+
+# The pubspec.lock file should be checked in for applications,
+# but not for libraries. This is a library.
+/pubspec.lock
+
+# Old rules from your original .gitignore that are still useful
+**/doc/api/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# =================================================
+# Platform-specific files (for the example/ app)
+# =================================================
+
+# Sensitive platform-specific files
+android/key.properties
+android/local.properties
+ios/Runner/GoogleService-Info.plist
+*.jks
+*.keystore
+
+# Generated platform-specific files
+android/.gradle/
+android/app/src/main/jniLibs/
+ios/Pods/
+ios/Podfile.lock
+ios/DerivedData/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
