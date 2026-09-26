@@ -1,31 +1,27 @@
-# EZ Expanded
+# EzExpanded
 
-A **defensive, self-aware** widget that provides flex-based expansion behavior while safely handling unbounded constraints.
+A defensive, self-aware drop-in replacement for Flutter's `Expanded` that provides true flex-based expansion inside bounded `Row`, `Column`, and `Flex` widgets, while preventing layout crashes from unbounded constraints or invalid parent widget hierarchy.
 
 ## 🛑 The Problem
 
-Developers often want widgets to "fill available space" in layouts. Flutter's `Expanded` widget provides this for `Row` and `Column`, but it has strict requirements:
-*   **Must be inside Flex:** Using `Expanded` outside of `Row`, `Column`, or `Flex` causes a crash:
-    > "Incorrect use of ParentDataWidget. Expanded widgets must be placed inside Flex widgets."
-*   **Unbounded Constraints:** Even when used correctly inside Flex, if the Flex itself has unbounded constraints, the layout can still break.
+In Flutter, using `Expanded` can easily trigger fatal runtime exceptions:
 
-## ✅ The EZ Solution
+1. **Invalid Parent Widget:** Using `Expanded` outside of a `Row`, `Column`, or `Flex` (e.g. inside `Stack`, `Container`, or directly in `Scaffold`) crashes immediately:
+   > "Incorrect use of ParentDataWidget. Expanded widgets must be placed inside Flex widgets."
+2. **Unbounded Flex Container:** Using `Expanded` inside a `Column` or `Row` nested within a scroll view (`SingleChildScrollView`, `ListView`, etc.) crashes with:
+   > "RenderFlex children have non-zero flex but incoming height/width constraints are unbounded."
 
-`EzExpanded` follows the same defensive pattern as `EzListView`, `EzGridView`, and `EzCustomScrollView`:
+Instead of a graceful degradation or actionable guidance, the screen turns red and the build fails.
 
-*   **Auto-Detection:** Uses `LayoutBuilder` to detect unbounded constraints (infinite width/height).
-*   **Crash Prevention:** Automatically applies a safe, bounded size (50% of screen) to ensure the widget renders instead of breaking.
-*   **Developer Feedback:**
-    *   **Debug Mode:** Displays a **red border** and logs a clear warning identifying the exact parent causing the issue.
-    *   **Release Mode:** Silently fixes the layout so your users never see a broken screen.
-*   **Flex Behavior:** When constraints are bounded, uses `Flexible` with `FlexFit.tight` to provide the same expansion behavior as `Expanded`.
+## ✅ The EzExpanded Solution
 
-## ✨ Features
+`EzExpanded` intercepts both error scenarios defensively:
 
-*   **Drop-in Replacement:** Provides flex-based expansion when possible.
-*   **Omni-Directional Safety:** Handles both unbounded height and width.
-*   **Works Anywhere:** Compatible with any widget context, not just Flex widgets.
-*   **Zero Dependencies:** Lightweight and pure Flutter.
+* **True Flex Expansion:** When placed inside a valid, bounded `Row`, `Column`, or `Flex`, it behaves as a native `Expanded` (or `Flexible`), accurately dividing available space according to `flex` factors.
+* **Invalid Parent Protection:** Detects if placed outside a `Flex` and safely renders the child without throwing `ParentDataWidget` errors.
+* **Unbounded Scroll Protection:** Detects if the enclosing `Flex` is inside an unconstrained scrollable and applies a sensible, responsive fallback size (50% screen height/width or custom dimensions).
+* **Developer Diagnostics (Debug Mode):** Highlights problematic usage with a red border and reports a detailed `FlutterError` diagnosing the exact parent culprit (e.g. `SingleChildScrollView`, `RenderStack`).
+* **Silent Fix (Release Mode):** Automatically applies the fallback layout so your users never see a crash or red screen.
 
 ## 📦 Installation
 
@@ -35,34 +31,20 @@ flutter pub add ez_expanded
 
 ## 🚀 Usage
 
-### Basic (Safe with Unbounded Constraints)
-This would normally crash or cause layout errors, but EzExpanded handles it safely:
-```dart
-Column(
-  children: [
-    Text('Header'),
-    EzExpanded(
-      child: Container(
-        color: Colors.blue,
-        child: Center(child: Text('Fills Space')),
-      ),
-    ),
-  ],
-)
-```
+### 1. Safe Inside SingleChildScrollView (Crash Prevention)
 
-### Correct Usage (With Bounded Constraints)
-When used in a properly constrained context, it behaves like `Expanded`:
+Standard `Expanded` crashes here. `EzExpanded` safely renders a fallback and warns you in debug mode:
+
 ```dart
-SizedBox(
-  height: 400,
+SingleChildScrollView(
   child: Column(
     children: [
-      Text('Header'),
+      const Text('Header'),
+      // Won't crash! Safely sized with a debug outline.
       EzExpanded(
         child: Container(
-          color: Colors.green,
-          child: Center(child: Text('Expands to Fill')),
+          color: Colors.blue,
+          child: const Center(child: Text('Content')),
         ),
       ),
     ],
@@ -70,8 +52,27 @@ SizedBox(
 )
 ```
 
-### With Flex Factor
-Control the expansion ratio just like `Expanded`:
+### 2. Normal Bounded Usage (True Flex Expansion)
+
+Inside a bounded `Column` or `Row`, `EzExpanded` provides genuine flex expansion:
+
+```dart
+SizedBox(
+  height: 300,
+  child: Column(
+    children: [
+      const Text('Fixed Header'),
+      // Expands to fill the remaining 250px
+      EzExpanded(
+        child: Container(color: Colors.green),
+      ),
+    ],
+  ),
+)
+```
+
+### 3. Multiple Flex Factors
+
 ```dart
 Row(
   children: [
@@ -87,10 +88,27 @@ Row(
 )
 ```
 
+### 4. Custom Fallback & Telemetry
+
+```dart
+EzExpanded(
+  fallbackHeight: 250,
+  showDebugIndicator: false, // Disables red border in debug mode
+  onUnboundedDetected: ({
+    required bool isInvalidParent,
+    required bool isUnbounded,
+    required String? culprit,
+  }) {
+    print('Layout issue in $culprit: invalidParent=$isInvalidParent, unbounded=$isUnbounded');
+  },
+  child: Container(color: Colors.teal),
+)
+```
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request on [GitHub](https://github.com/Evgenii-Zinner/ez-expanded).
+Contributions, issues, and feature suggestions are always welcome! Check out the [GitHub repository](https://github.com/Evgenii-Zinner/ez-expanded).
 
 ## 📜 License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.

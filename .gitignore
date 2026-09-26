@@ -27,7 +27,6 @@ migrate_working_dir/
 .packages
 build/
 coverage/
-test/
 
 # The pubspec.lock file should be checked in for applications,
 # but not for libraries. This is a library.
