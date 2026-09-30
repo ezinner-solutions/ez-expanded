@@ -1,46 +1,67 @@
 # EzExpanded
 
-A defensive, self-aware drop-in replacement for Flutter's `Expanded` that provides true flex-based expansion inside bounded `Row`, `Column`, and `Flex` widgets, while preventing layout crashes from unbounded constraints or invalid parent widget hierarchy.
+A defensive, crash-safe drop-in replacement for Flutter's `Expanded` that provides true flex-based expansion inside bounded `Row`, `Column`, and `Flex` widgets, while preventing layout crashes from unbounded constraints or invalid parent widget hierarchy.
 
-## 🛑 The Problem
+[![pub package](https://img.shields.io/pub/v/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
+[![likes](https://img.shields.io/pub/likes/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
+[![popularity](https://img.shields.io/pub/popularity/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
+[![pub points](https://img.shields.io/pub/points/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-In Flutter, using `Expanded` can easily trigger fatal runtime exceptions:
+## Problem Statement
 
-1. **Invalid Parent Widget:** Using `Expanded` outside of a `Row`, `Column`, or `Flex` (e.g. inside `Stack`, `Container`, or directly in `Scaffold`) crashes immediately:
-   > "Incorrect use of ParentDataWidget. Expanded widgets must be placed inside Flex widgets."
-2. **Unbounded Flex Container:** Using `Expanded` inside a `Column` or `Row` nested within a scroll view (`SingleChildScrollView`, `ListView`, etc.) crashes with:
-   > "RenderFlex children have non-zero flex but incoming height/width constraints are unbounded."
+In Flutter, standard `Expanded` and `Flexible` widgets must be direct children of a `Flex` (`Row`, `Column`, or `Flex`). Using them incorrectly triggers fatal runtime assertions that crash the application with a red error screen:
 
-Instead of a graceful degradation or actionable guidance, the screen turns red and the build fails.
+1. **Invalid Parent Hierarchy:** Using `Expanded` outside a `Flex` container (for example, inside a `Stack`, `Container`, or directly in a `Scaffold` body) crashes immediately.
+2. **Unbounded Flex Container:** Using `Expanded` inside a `Column` or `Row` placed inside an unconstrained scroll view (`SingleChildScrollView`, `ListView`) gives the flex container infinite space, violating Flutter's flex layout algorithm.
 
-## ✅ The EzExpanded Solution
+### Targeted Error Signatures
+`EzExpanded` catches and prevents the following Flutter layout runtime exceptions:
+* `"Incorrect use of ParentDataWidget"`
+* `"Expanded widgets must be placed inside Flex widgets"`
+* `"RenderFlex children have non-zero flex but incoming height constraints are unbounded"`
+* `"RenderFlex children have non-zero flex but incoming width constraints are unbounded"`
+* `"A RenderFlex overflowed by ... pixels"`
 
-`EzExpanded` intercepts both error scenarios defensively:
+## Technical Solution
 
-* **True Flex Expansion:** When placed inside a valid, bounded `Row`, `Column`, or `Flex`, it behaves as a native `Expanded` (or `Flexible`), accurately dividing available space according to `flex` factors.
-* **Invalid Parent Protection:** Detects if placed outside a `Flex` and safely renders the child without throwing `ParentDataWidget` errors.
-* **Unbounded Scroll Protection:** Detects if the enclosing `Flex` is inside an unconstrained scrollable and applies a sensible, responsive fallback size (50% screen height/width or custom dimensions).
-* **Developer Diagnostics (Debug Mode):** Highlights problematic usage with a red border and reports a detailed `FlutterError` diagnosing the exact parent culprit (e.g. `SingleChildScrollView`, `RenderStack`).
-* **Silent Fix (Release Mode):** Automatically applies the fallback layout so your users never see a crash or red screen.
+`EzExpanded` inspects incoming constraints and ancestor hierarchy defensively:
 
-## 📦 Installation
+1. **True Flex Expansion:** Inside a valid, bounded `Row`, `Column`, or `Flex`, `EzExpanded` operates as a native `Expanded` (or `Flexible`), dividing remaining space proportionally according to `flex` factors.
+2. **Invalid Parent Protection:** When used outside of a `Flex` widget, it safely renders the child without throwing `ParentDataWidget` assertion errors.
+3. **Unbounded Scroll Protection:** When placed inside an unconstrained scrollable (such as `SingleChildScrollView`), it calculates a responsive fallback size (50% of screen height/width via `MediaQuery`/`View`) so the child remains visible.
+4. **Debug Diagnostics:** In debug mode, highlights layout issues with a visible red outline border and logs an actionable `FlutterError` identifying the parent culprit (e.g. `SingleChildScrollView`, `RenderStack`).
+5. **Silent Release Protection:** In release mode, silently applies the fallback layout so end users never experience a crash or red screen.
+
+## Installation
 
 ```shell
 flutter pub add ez_expanded
 ```
 
-## 🚀 Usage
+## Quick Migration
+
+Replace standard `Expanded` with `EzExpanded`:
+
+```diff
+- Expanded(
++ EzExpanded(
+    child: MyContentWidget(),
+  )
+```
+
+## Usage Examples
 
 ### 1. Safe Inside SingleChildScrollView (Crash Prevention)
 
-Standard `Expanded` crashes here. `EzExpanded` safely renders a fallback and warns you in debug mode:
+In standard Flutter, placing `Expanded` inside a `SingleChildScrollView` throws `"RenderFlex children have non-zero flex but incoming height constraints are unbounded"`. `EzExpanded` prevents the crash:
 
 ```dart
 SingleChildScrollView(
   child: Column(
     children: [
       const Text('Header'),
-      // Won't crash! Safely sized with a debug outline.
+      // Does not crash. Renders safely with a red diagnostic outline in debug mode:
       EzExpanded(
         child: Container(
           color: Colors.blue,
@@ -61,7 +82,7 @@ SizedBox(
   height: 300,
   child: Column(
     children: [
-      const Text('Fixed Header'),
+      const Text('Fixed Header (50px)'),
       // Expands to fill the remaining 250px
       EzExpanded(
         child: Container(color: Colors.green),
@@ -88,7 +109,7 @@ Row(
 )
 ```
 
-### 4. Custom Fallback & Telemetry
+### 4. Custom Fallback Dimensions & Telemetry Callback
 
 ```dart
 EzExpanded(
@@ -99,16 +120,58 @@ EzExpanded(
     required bool isUnbounded,
     required String? culprit,
   }) {
-    print('Layout issue in $culprit: invalidParent=$isInvalidParent, unbounded=$isUnbounded');
+    // Send diagnostics to your logging or telemetry service
+    debugPrint('Layout issue in $culprit: invalidParent=$isInvalidParent, unbounded=$isUnbounded');
   },
   child: Container(color: Colors.teal),
 )
 ```
 
-## 🤝 Contributing
+## Permanent Architectural Resolution
 
-Contributions, issues, and feature suggestions are always welcome! Check out the [GitHub repository](https://github.com/Evgenii-Zinner/ez-expanded).
+While `EzExpanded` safely handles invalid configurations, recommended structural patterns in Flutter include:
 
-## 📜 License
+```dart
+// Option A: If inside a scroll view, use explicit sizing instead of Expanded
+SingleChildScrollView(
+  child: Column(
+    children: [
+      const Text('Header'),
+      SizedBox(
+        height: 300,
+        child: MyContentWidget(),
+      ),
+    ],
+  ),
+)
 
-MIT License - see [LICENSE](LICENSE) for details.
+// Option B: If placed outside Flex, wrap in a Column or Row
+Column(
+  children: [
+    EzExpanded(child: MyContentWidget()),
+  ],
+)
+```
+
+## API Reference
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `child` | `Widget` | *Required* | The widget below this widget in the tree. |
+| `flex` | `int` | `1` | The flex factor to use for determining child extent. |
+| `fit` | `FlexFit` | `FlexFit.tight` | How the child is inscribed into the available space. |
+| `showDebugIndicator` | `bool` | `true` | Shows a red outline border in debug mode when invalid or unbounded. |
+| `fallbackWidth` | `double?` | `null` | Explicit fallback width when horizontal dimension is unbounded. |
+| `fallbackHeight` | `double?` | `null` | Explicit fallback height when vertical dimension is unbounded. |
+| `onUnboundedDetected` | `Function?` | `null` | Diagnostic callback invoked when invalid parent or unbounded constraint is caught. |
+
+## Sponsoring & Support
+
+If this package saved you debugging time, consider supporting ongoing maintenance:
+* [GitHub Sponsors](https://github.com/sponsors/Evgenii-Zinner/)
+* [Thanks.dev](https://thanks.dev/u/gh/evgenii-zinner)
+* [Buy Me a Coffee](https://buymeacoffee.com/evgeniizinner)
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.

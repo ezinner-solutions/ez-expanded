@@ -1,10 +1,22 @@
 name: ez_expanded
-description: A defensive widget that provides flex-based expansion behavior while safely handling unbounded constraints.
+description: A defensive, crash-safe drop-in replacement for Flutter's Expanded that provides flex expansion while preventing unbounded scroll and invalid parent crashes.
 version: 0.0.2
-homepage: https://flutter.ezinner.com
+homepage: https://github.com/Evgenii-Zinner/ez-expanded
 repository: https://github.com/Evgenii-Zinner/ez-expanded
 issue_tracker: https://github.com/Evgenii-Zinner/ez-expanded/issues
 documentation: https://flutter.ezinner.com/ez_expanded
+
+topics:
+  - flutter
+  - ez-flutter
+  - expanded
+  - flex
+  - layout
+
+funding:
+  - https://github.com/sponsors/Evgenii-Zinner/
+  - https://thanks.dev/u/gh/evgenii-zinner
+  - https://buymeacoffee.com/evgeniizinner
 
 environment:
   sdk: ^3.5.0
@@ -17,15 +29,3 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-
-topics:
-  - flutter
-  - widget
-  - expanded
-  - flex
-  - layout
-
-funding:
-  - https://github.com/sponsors/Evgenii-Zinner
-  - https://thanks.dev/u/gh/evgenii-zinner
-  - https://buymeacoffee.com/evgeniizinner
