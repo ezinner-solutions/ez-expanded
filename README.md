@@ -4,7 +4,6 @@ A defensive, crash-safe drop-in replacement for Flutter's `Expanded` that provid
 
 [![pub package](https://img.shields.io/pub/v/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
 [![likes](https://img.shields.io/pub/likes/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
-[![popularity](https://img.shields.io/pub/popularity/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
 [![pub points](https://img.shields.io/pub/points/ez_expanded.svg)](https://pub.dev/packages/ez_expanded)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
